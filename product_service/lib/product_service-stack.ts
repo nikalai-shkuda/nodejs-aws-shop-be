@@ -42,7 +42,7 @@ export class ProductServiceStack extends cdk.Stack {
       },
     });
 
-    const productsResource = api.root.addResource("product");
+    const productsResource = api.root.addResource("products");
     productsResource.addMethod(
       "GET",
       new apigateway.LambdaIntegration(getProductsLambda)
