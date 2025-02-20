@@ -1,4 +1,5 @@
-import { products } from "./products.js";
+import commonHeaders from "/opt/nodejs/shared/headers/common.mjs";
+import products from "/opt/nodejs/shared/mock/products.mjs";
 
 export const getProductsById = async (event) => {
   try {
@@ -8,25 +9,24 @@ export const getProductsById = async (event) => {
     if (!product) {
       return {
         body: JSON.stringify({ message: "Product not found" }),
+        headers: commonHeaders,
         statusCode: 404,
       };
     }
 
     return {
       body: JSON.stringify(product),
-      headers: {
-        "Access-Control-Allow-Methods": "GET,OPTIONS,GET",
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers: commonHeaders,
       statusCode: 200,
     };
   } catch (error) {
+    console.error("Error fetching product:", error);
     return {
-      body: JSON.stringify({ message: error.message }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
-      statusCode: error instanceof NotFoundError ? 404 : 500,
+      body: JSON.stringify({
+        message: error?.message || "Internal Server Error",
+      }),
+      headers: commonHeaders,
+      statusCode: 500,
     };
   }
 };

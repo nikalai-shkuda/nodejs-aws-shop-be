@@ -7,6 +7,12 @@ export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const commonLayer = new lambda.LayerVersion(this, "CommonLayer", {
+      code: lambda.Code.fromAsset("layers/common"),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_22_X],
+      description: "Common layer with shared code",
+    });
+
     const getProductsLambda = new lambda.Function(
       this,
       "GetAllProductsLambda",
@@ -14,6 +20,7 @@ export class ProductServiceStack extends cdk.Stack {
         runtime: lambda.Runtime.NODEJS_22_X,
         handler: "index.getProducts",
         code: lambda.Code.fromAsset("lambda/getProducts"),
+        layers: [commonLayer],
       }
     );
 
@@ -24,6 +31,7 @@ export class ProductServiceStack extends cdk.Stack {
         runtime: lambda.Runtime.NODEJS_22_X,
         handler: "index.getProductsById",
         code: lambda.Code.fromAsset("lambda/getProductsById"),
+        layers: [commonLayer],
       }
     );
 
