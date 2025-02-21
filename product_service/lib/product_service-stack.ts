@@ -19,7 +19,7 @@ export class ProductServiceStack extends cdk.Stack {
       {
         runtime: lambda.Runtime.NODEJS_22_X,
         handler: "index.getProducts",
-        code: lambda.Code.fromAsset("lambda/getProducts"),
+        code: lambda.Code.fromAsset("dist/lambda/getProducts"),
         layers: [commonLayer],
       }
     );
@@ -30,7 +30,7 @@ export class ProductServiceStack extends cdk.Stack {
       {
         runtime: lambda.Runtime.NODEJS_22_X,
         handler: "index.getProductsById",
-        code: lambda.Code.fromAsset("lambda/getProductsById"),
+        code: lambda.Code.fromAsset("dist/lambda/getProductsById"),
         layers: [commonLayer],
       }
     );
