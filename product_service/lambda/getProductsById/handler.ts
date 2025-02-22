@@ -3,11 +3,9 @@ import {
   APIGatewayProxyResult,
   Handler,
 } from "aws-lambda";
-// @ts-ignore
+import { commonHeaders } from "/opt/nodejs/headers";
 import { Product } from "/opt/nodejs/types";
-
-const commonHeaders = require("/opt/nodejs/commonHeaders");
-const products: Product[] = require("/opt/nodejs/products");
+import { products } from "/opt/nodejs/mock";
 
 export const getProductsById: Handler = async (
   event: APIGatewayProxyEvent
