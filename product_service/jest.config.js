@@ -1,8 +1,12 @@
 module.exports = {
-  testEnvironment: 'node',
-  roots: ['<rootDir>/test'],
-  testMatch: ['**/*.test.ts'],
+  testEnvironment: "node",
+  roots: ["<rootDir>"],
+  testMatch: ["**/*.test.ts"],
   transform: {
-    '^.+\\.tsx?$': 'ts-jest'
-  }
+    "^.+\\.ts$": "ts-jest",
+  },
+  moduleFileExtensions: ["ts", "js"],
+  moduleNameMapper: {
+    "^/opt/nodejs/(.*)$": "<rootDir>/layers/nodejs/$1",
+  },
 };
