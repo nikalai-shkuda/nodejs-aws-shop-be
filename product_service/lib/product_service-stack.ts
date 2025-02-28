@@ -42,15 +42,11 @@ export class ProductServiceStack extends cdk.Stack {
       layers: [commonLayer],
     };
 
-    const getProductsLambda = new NodejsFunction(
-      this,
-      "BadLayerExampleLambda",
-      {
-        entry: path.join(__dirname, "../lambda/getProducts/index.ts"),
-        handler: "getProducts",
-        ...commonLabmdaSettings,
-      }
-    );
+    const getProductsLambda = new NodejsFunction(this, "GetProductsLambda", {
+      entry: path.join(__dirname, "../lambda/getProducts/index.ts"),
+      handler: "getProducts",
+      ...commonLabmdaSettings,
+    });
 
     const getProductsByIdLambda = new NodejsFunction(
       this,
