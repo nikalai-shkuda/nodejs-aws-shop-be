@@ -1,11 +1,13 @@
 import { APIGatewayProxyResult, Handler } from "aws-lambda";
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { commonHeaders } from "/opt/nodejs/headers";
+import { handleError } from "../../utils/responseError";
 
 export const getProducts: Handler =
   async (): Promise<APIGatewayProxyResult> => {
     try {
-      const client = new DynamoDBClient({ region: process.env.REGION });
+      console.log("getProducts invoked");
+      const client = new DynamoDBClient();
       const productsTable = process.env.PRODUCTS_TABLE;
       const stocksTable = process.env.STOCKS_TABLE;
 
@@ -37,22 +39,13 @@ export const getProducts: Handler =
         count: stocks[product.id] || 0,
       }));
 
-      console.log({ products, stocks, finalProducts });
-
+      console.log("Fetched products:", finalProducts);
       return {
         body: JSON.stringify(finalProducts),
         headers: commonHeaders,
         statusCode: 200,
       };
     } catch (error) {
-      console.error("Error fetching product:", error);
-      return {
-        body: JSON.stringify({
-          message:
-            error instanceof Error ? error?.message : "Internal Server Error",
-        }),
-        headers: commonHeaders,
-        statusCode: 500,
-      };
+      return handleError({ error, message: "Error fetching products" });
     }
   };
