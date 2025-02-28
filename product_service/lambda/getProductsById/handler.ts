@@ -3,9 +3,16 @@ import {
   APIGatewayProxyResult,
   Handler,
 } from "aws-lambda";
-import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { commonHeaders } from "/opt/nodejs/headers";
+import { Product, Stock } from "../../src/types/products";
 import { handleError } from "../../utils/responseError";
+
+const client = new DynamoDBClient();
+const dynamodb = DynamoDBDocumentClient.from(client);
+const productsTable = process.env.PRODUCTS_TABLE;
+const stocksTable = process.env.STOCKS_TABLE;
 
 export const getProductsById: Handler = async (
   event: APIGatewayProxyEvent
@@ -22,39 +29,38 @@ export const getProductsById: Handler = async (
       });
     }
 
-    const client = new DynamoDBClient({});
-    const productsTable = process.env.PRODUCTS_TABLE;
-    const stocksTable = process.env.STOCKS_TABLE;
+    const [productResponse, stockResponse] = await Promise.all([
+      dynamodb.send(
+        new GetCommand({
+          TableName: productsTable,
+          Key: { id: productId },
+        })
+      ),
+      dynamodb.send(
+        new GetCommand({
+          TableName: stocksTable,
+          Key: { product_id: productId },
+        })
+      ),
+    ]);
 
-    const product = await client.send(
-      new GetItemCommand({
-        TableName: productsTable,
-        Key: { id: { S: productId ?? "" } },
-      })
-    );
-
-    if (!product?.Item) {
-      return handleError({ message: "Product not found", statusCode: 404 });
+    const product: Product = (productResponse.Item as Product) || {};
+    const stock: Stock = (stockResponse.Item as Stock) || { count: 0 };
+    if (!productResponse.Item) {
+      return handleError({
+        message: "Product not found",
+        statusCode: 404,
+      });
     }
 
-    const stock = await client.send(
-      new GetItemCommand({
-        TableName: stocksTable,
-        Key: { product_id: { S: productId ?? "" } },
-      })
-    );
-
-    const finalProduct = {
-      id: product.Item.id.S,
-      description: product.Item?.description?.S,
-      price: Number(product.Item?.price?.N),
-      title: product.Item?.title?.S,
-      count: stock.Item ? Number(stock.Item?.count?.N) : 0,
+    const resultProduct = {
+      ...product,
+      count: stock.count,
     };
 
-    console.log("Fetched product:", product);
+    console.log("Fetched product:", resultProduct);
     return {
-      body: JSON.stringify(finalProduct),
+      body: JSON.stringify(resultProduct),
       headers: commonHeaders,
       statusCode: 200,
     };
