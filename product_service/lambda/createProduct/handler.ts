@@ -1,4 +1,9 @@
-import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  TransactWriteCommand,
+  TransactWriteCommandInput,
+} from "@aws-sdk/lib-dynamodb";
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
@@ -6,7 +11,13 @@ import {
 } from "aws-lambda";
 import { commonHeaders } from "/opt/nodejs/headers";
 import { v4 as uuidv4 } from "uuid";
+import { Product, ProductRequest, Stock } from "../../src/types/products";
 import { handleError } from "../../utils/responseError";
+
+const client = new DynamoDBClient();
+const dynamodb = DynamoDBDocumentClient.from(client);
+const productsTable = process.env.PRODUCTS_TABLE;
+const stocksTable = process.env.STOCKS_TABLE;
 
 export const createProduct: Handler = async (
   event: APIGatewayProxyEvent
@@ -30,36 +41,42 @@ export const createProduct: Handler = async (
     }
 
     const id = uuidv4();
-    const client = new DynamoDBClient();
-    await client.send(
-      new PutItemCommand({
-        TableName: process.env.PRODUCTS_TABLE,
-        Item: {
-          description: { S: description },
-          id: { S: id },
-          price: { N: price.toString() },
-          title: { S: title },
-        },
-      })
-    );
-
-    await client.send(
-      new PutItemCommand({
-        TableName: process.env.STOCKS_TABLE,
-        Item: { product_id: { S: id }, count: { N: count.toString() } },
-      })
-    );
-
-    console.log("Product created successfully", {
+    const product: Product = {
       id,
       title,
       description,
       price,
+    };
+    const stock: Stock = {
+      product_id: id,
       count,
-    });
+    };
+    const createdProduct: ProductRequest = {
+      ...product,
+      count: stock.count,
+    };
+    const transaction: TransactWriteCommandInput = {
+      TransactItems: [
+        {
+          Put: {
+            TableName: productsTable,
+            Item: product,
+          },
+        },
+        {
+          Put: {
+            TableName: stocksTable,
+            Item: stock,
+          },
+        },
+      ],
+    };
 
+    await dynamodb.send(new TransactWriteCommand(transaction));
+
+    console.log("Product created successfully", createdProduct);
     return {
-      body: JSON.stringify({ count, description, id, price, title }),
+      body: JSON.stringify(createdProduct),
       headers: commonHeaders,
       statusCode: 201,
     };
