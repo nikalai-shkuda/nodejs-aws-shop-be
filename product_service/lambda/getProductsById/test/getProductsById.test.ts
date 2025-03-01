@@ -1,46 +1,73 @@
 import { Context } from "aws-lambda";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { getProductsById } from "../index";
-import { products as mockProducts } from "../../../layers/nodejs/mock";
-import { commonHeaders as mockHeaders } from "../../../layers/nodejs/headers";
 
-jest.mock("../../../layers/nodejs/headers", () => ({
-  commonHeaders: {
-    "Content-Type": "application/json",
-  },
-}));
-jest.mock("../../../layers/nodejs/mock", () => ({
-  products: [
-    { id: "1", name: "Product 1" },
-    { id: "2", name: "Product 2" },
-  ],
-}));
+jest.mock("@aws-sdk/client-dynamodb");
+jest.mock("@aws-sdk/lib-dynamodb");
 
-describe("getProductsById Lambda Function", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.resetModules();
-  });
-
+describe("getProductsById", () => {
   const context = {} as Context;
   const cb = () => {};
 
-  it("should return a product when a valid ID is provided", async () => {
-    const event = {
-      pathParameters: { productId: mockProducts[0].id },
-    };
-
-    const response = await getProductsById(event, context, cb);
-    expect(response.statusCode).toBe(200);
-    expect(response.headers).toEqual(mockHeaders);
-    expect(JSON.parse(response.body)).toEqual(mockProducts[0]);
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it("should return 404 when the product is not found", async () => {
-    const event = {
-      pathParameters: { productId: "-1" },
-    };
+  it("should return a product with stock count", async () => {
+    const mockSend = jest.fn();
+    mockSend
+      .mockResolvedValueOnce({
+        Item: { id: "1", title: "Product A", price: 50 },
+      })
+      .mockResolvedValueOnce({ Item: { product_id: "1", count: 10 } });
+
+    (DynamoDBDocumentClient.from as jest.Mock).mockReturnValue({
+      send: mockSend,
+    });
+
+    const event = { pathParameters: { productId: "1" } };
     const response = await getProductsById(event, context, cb);
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({
+      id: "1",
+      title: "Product A",
+      price: 50,
+      count: 10,
+    });
+  });
+
+  it("should return 404 if product not found", async () => {
+    const mockSend = jest.fn();
+    mockSend
+      .mockResolvedValueOnce({ Item: null })
+      .mockResolvedValueOnce({ Item: null });
+
+    (DynamoDBDocumentClient.from as jest.Mock).mockReturnValue({
+      send: mockSend,
+    });
+
+    const event = { pathParameters: { productId: "1" } };
+    const response = await getProductsById(event, context, cb);
+
     expect(response.statusCode).toBe(404);
-    expect(JSON.parse(response.body).message).toBe("Product not found");
+  });
+
+  it("should return 400 if productId is missing", async () => {
+    const event = { pathParameters: {} };
+    const response = await getProductsById(event, context, cb);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain("Product ID is required");
+  });
+
+  it("should handle DynamoDB errors", async () => {
+    const mockSend = jest.fn();
+    mockSend.mockRejectedValue(new Error("DynamoDB error"));
+
+    const event = { pathParameters: { productId: "1" } };
+    const response = await getProductsById(event, context, cb);
+
+    expect(response.statusCode).toBe(500);
   });
 });

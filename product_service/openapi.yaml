@@ -24,6 +24,9 @@ components:
         price:
           type: number
           example: 15
+        count:
+          type: number
+          example: 10
 
 paths:
   /products:
@@ -42,6 +45,27 @@ paths:
                   $ref: "#/components/schemas/Product"
         404:
           description: No products found
+    post:
+      tags:
+        - Product
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        201:
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        400:
+          description: Invalid input
+        500:
+          description: Internal server error
   /products/{id}:
     parameters:
       - name: id
