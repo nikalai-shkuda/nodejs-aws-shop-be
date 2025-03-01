@@ -1,5 +1,5 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import { commonHeaders } from "../../layers/nodejs/headers";
+import { commonHeaders } from "./headers";
 
 export const response = (
   statusCode: number,

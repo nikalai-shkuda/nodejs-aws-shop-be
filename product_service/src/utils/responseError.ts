@@ -1,5 +1,5 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import { commonHeaders } from "../../layers/nodejs/headers";
+import { commonHeaders } from "./headers";
 
 type serverErrorType = {
   error?: unknown;
