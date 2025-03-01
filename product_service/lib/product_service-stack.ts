@@ -22,12 +22,6 @@ export class ProductServiceStack extends cdk.Stack {
       tableName: "stocks",
     });
 
-    const commonLayer = new LayerVersion(this, "CommonLayer", {
-      code: Code.fromAsset("layers"),
-      compatibleRuntimes: [Runtime.NODEJS_22_X],
-      description: "Common layer with shared code",
-    });
-
     const commonLabmdaSettings = {
       runtime: Runtime.NODEJS_22_X,
       environment: {
@@ -39,7 +33,6 @@ export class ProductServiceStack extends cdk.Stack {
         sourceMap: true,
         externalModules: ["headers", "mock", "types"],
       },
-      layers: [commonLayer],
     };
 
     const getProductsLambda = new NodejsFunction(this, "GetProductsLambda", {

@@ -5,11 +5,6 @@
     "outDir": "./dist",
     "rootDir": "./",
     "esModuleInterop": true,
-    "paths": {
-      "/opt/nodejs/headers": ["./layers/nodejs/headers"],
-      "/opt/nodejs/mock": ["./layers/nodejs/mock"],
-      "/opt/nodejs/types": ["./layers/nodejs/types"],
-    },
     "lib": [
       "es2020",
       "dom"
