@@ -12,7 +12,7 @@ import {
 import { commonHeaders } from "/opt/nodejs/headers";
 import { v4 as uuidv4 } from "uuid";
 import { Product, ProductRequest, Stock } from "../../src/types/products";
-import { handleError } from "../../utils/responseError";
+import { handleError } from "../../src/utils/responseError";
 
 const client = new DynamoDBClient();
 const dynamodb = DynamoDBDocumentClient.from(client);

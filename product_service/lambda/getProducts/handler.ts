@@ -3,7 +3,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { commonHeaders } from "/opt/nodejs/headers";
 import { Product, Stock } from "../../src/types/products";
-import { handleError } from "../../utils/responseError";
+import { handleError } from "../../src/utils/responseError";
 
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
