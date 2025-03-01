@@ -5,8 +5,6 @@ import { commonHeaders } from "/opt/nodejs/headers";
 import { Product, Stock } from "../../src/types/products";
 import { handleError } from "../../utils/responseError";
 
-const client = new DynamoDBClient();
-const dynamodb = DynamoDBDocumentClient.from(client);
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
 
@@ -14,6 +12,8 @@ export const getProducts: Handler =
   async (): Promise<APIGatewayProxyResult> => {
     try {
       console.log("getProducts invoked");
+      const client = new DynamoDBClient();
+      const dynamodb = DynamoDBDocumentClient.from(client);
       const [productsResponse, stocksResponse] = await Promise.all([
         dynamodb.send(new ScanCommand({ TableName: productsTable })),
         dynamodb.send(new ScanCommand({ TableName: stocksTable })),

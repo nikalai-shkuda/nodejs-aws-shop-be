@@ -9,8 +9,6 @@ import { commonHeaders } from "/opt/nodejs/headers";
 import { Product, Stock } from "../../src/types/products";
 import { handleError } from "../../utils/responseError";
 
-const client = new DynamoDBClient();
-const dynamodb = DynamoDBDocumentClient.from(client);
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
 
@@ -28,6 +26,9 @@ export const getProductsById: Handler = async (
         statusCode: 400,
       });
     }
+
+    const client = new DynamoDBClient();
+    const dynamodb = DynamoDBDocumentClient.from(client);
 
     const [productResponse, stockResponse] = await Promise.all([
       dynamodb.send(

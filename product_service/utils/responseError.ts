@@ -13,7 +13,7 @@ export const handleError = (params: serverErrorType): APIGatewayProxyResult => {
     message = "Internal Server Error",
     statusCode = 500,
   } = params;
-  console.error(message, error);
+  console.log(error || message);
   return {
     body: JSON.stringify({
       message: error instanceof Error ? error.message : message,

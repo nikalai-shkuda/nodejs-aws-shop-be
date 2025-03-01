@@ -1,52 +1,62 @@
-import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { Context } from "aws-lambda";
-import { mockClient } from "aws-sdk-client-mock";
 import { createProduct } from "../index";
 
-const dynamoMock = mockClient(DynamoDBClient);
+jest.mock("@aws-sdk/client-dynamodb");
+jest.mock("@aws-sdk/lib-dynamodb", () => {
+  const actualLib = jest.requireActual("@aws-sdk/lib-dynamodb");
+  return {
+    ...actualLib,
+    DynamoDBDocumentClient: {
+      from: jest.fn((client) => ({
+        send: jest.fn(),
+      })),
+    },
+    TransactWriteCommand: jest.fn(),
+  };
+});
+jest.mock("uuid", () => ({ v4: jest.fn(() => "test-uuid") }));
 
-describe("createProduct Lambda", () => {
-  beforeEach(() => {
-    dynamoMock.reset();
-  });
-
+describe("createProduct Lambda Function", () => {
   const context = {} as Context;
   const cb = () => {};
-  const product = {
-    description: "Test Product",
-    count: 10,
-    price: 20,
-    title: "Sample",
-  };
 
-  it("should create a product successfully", async () => {
-    dynamoMock.on(PutItemCommand).resolves({});
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should successfully create a product", async () => {
+    const mockSend = jest.fn();
+    mockSend.mockResolvedValueOnce({});
+
+    const product = {
+      title: "Test Product",
+      description: "Test Description",
+      price: 100,
+      count: 5,
+    };
 
     const event = {
       body: JSON.stringify(product),
     };
-    const result = await createProduct(event, context, cb);
+    const response = await createProduct(event, context, cb);
 
-    expect(result.statusCode).toBe(201);
-    expect(JSON.parse(result.body)).toMatchObject(product);
+    expect(response.statusCode).toBe(201);
+    expect(JSON.parse(response.body)).toEqual({
+      ...product,
+      id: "test-uuid",
+    });
+    expect(TransactWriteCommand).toHaveBeenCalledTimes(1);
   });
 
-  it("should return 400 if request body is missing", async () => {
-    const event = { body: "" };
-    const result = await createProduct(event, context, cb);
-
-    expect(result.statusCode).toBe(400);
-  });
-
-  it("should return 500 if DynamoDB call fails", async () => {
-    dynamoMock.on(PutItemCommand).rejects(new Error("DynamoDB error"));
-
+  it("should return 400 if request body is invalid", async () => {
+    const mockSend = jest.fn();
     const event = {
-      body: JSON.stringify(product),
+      body: JSON.stringify({ title: "Test Product" }),
     };
-    const result = await createProduct(event, context, cb);
+    const response = await createProduct(event, context, cb);
 
-    expect(result.statusCode).toBe(500);
-    expect(JSON.parse(result.body).message).toBe("DynamoDB error");
+    expect(response.statusCode).toBe(400);
+    expect(mockSend).not.toHaveBeenCalled();
   });
 });
