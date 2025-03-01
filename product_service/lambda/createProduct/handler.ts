@@ -9,10 +9,10 @@ import {
   APIGatewayProxyResult,
   Handler,
 } from "aws-lambda";
-import { commonHeaders } from "/opt/nodejs/headers";
 import { v4 as uuidv4 } from "uuid";
 import { Product, ProductRequest, Stock } from "../../src/types/products";
 import { handleError } from "../../src/utils/responseError";
+import { response } from "../../src/utils/responseSuccessful";
 
 const client = new DynamoDBClient();
 const dynamodb = DynamoDBDocumentClient.from(client);
@@ -75,11 +75,7 @@ export const createProduct: Handler = async (
     await dynamodb.send(new TransactWriteCommand(transaction));
 
     console.log("Product created successfully", createdProduct);
-    return {
-      body: JSON.stringify(createdProduct),
-      headers: commonHeaders,
-      statusCode: 201,
-    };
+    return response(201, createdProduct);
   } catch (error) {
     return handleError({ error, message: "Error creating product" });
   }

@@ -5,9 +5,9 @@ import {
 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
-import { commonHeaders } from "/opt/nodejs/headers";
 import { Product, Stock } from "../../src/types/products";
 import { handleError } from "../../src/utils/responseError";
+import { response } from "../../src/utils/responseSuccessful";
 
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
@@ -60,11 +60,7 @@ export const getProductsById: Handler = async (
     };
 
     console.log("Fetched product:", resultProduct);
-    return {
-      body: JSON.stringify(resultProduct),
-      headers: commonHeaders,
-      statusCode: 200,
-    };
+    return response(200, resultProduct);
   } catch (error) {
     return handleError({ error, message: "Error fetching product" });
   }

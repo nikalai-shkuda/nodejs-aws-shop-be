@@ -1,9 +1,9 @@
 import { APIGatewayProxyResult, Handler } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { commonHeaders } from "/opt/nodejs/headers";
 import { Product, Stock } from "../../src/types/products";
 import { handleError } from "../../src/utils/responseError";
+import { response } from "../../src/utils/responseSuccessful";
 
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
@@ -36,11 +36,7 @@ export const getProducts: Handler =
       }));
 
       console.log("Fetched products:", finalProducts);
-      return {
-        body: JSON.stringify(finalProducts),
-        headers: commonHeaders,
-        statusCode: 200,
-      };
+      return response(200, finalProducts);
     } catch (error) {
       return handleError({ error, message: "Error fetching products" });
     }
