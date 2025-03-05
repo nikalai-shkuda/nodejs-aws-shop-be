@@ -3,6 +3,7 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
 import path = require("path");
 
@@ -42,6 +43,15 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
+    const importFileParserLambda = new NodejsFunction(
+      this,
+      "ImportFileParserLambda",
+      {
+        ...commonLabmdaSettings,
+        entry: path.join(__dirname, "../src/handlers/importFileParser.ts"),
+      }
+    );
+
     const api = new apigateway.RestApi(this, "ImportServiceAPI", {
       restApiName: "Import Service",
       deployOptions: {
@@ -60,7 +70,14 @@ export class ImportServiceStack extends cdk.Stack {
       new apigateway.LambdaIntegration(importProductsFileLambda)
     );
 
+    importBucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3Notifications.LambdaDestination(importFileParserLambda),
+      { prefix: "uploaded/" }
+    );
+
     importBucket.grantReadWrite(importProductsFileLambda);
+    importBucket.grantRead(importFileParserLambda);
 
     new cdk.CfnOutput(this, "ApiUrl", {
       value: api.url,
