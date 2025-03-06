@@ -1,5 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -50,6 +51,16 @@ export class ImportServiceStack extends cdk.Stack {
         ...commonLabmdaSettings,
         entry: path.join(__dirname, "../src/handlers/importFileParser.ts"),
       }
+    );
+
+    importFileParserLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:DeleteObject", "s3:PutObject"],
+        resources: [
+          `${importBucket.bucketArn}/uploaded/*`,
+          `${importBucket.bucketArn}/parsed/*`,
+        ],
+      })
     );
 
     const api = new apigateway.RestApi(this, "ImportServiceAPI", {
