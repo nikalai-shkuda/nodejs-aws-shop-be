@@ -7,7 +7,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
 import path = require("path");
-import { config } from "../src/config";
+import { config } from "../config";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -41,7 +41,7 @@ export class ImportServiceStack extends cdk.Stack {
       "ImportProductsFileLambda",
       {
         ...commonLabmdaSettings,
-        entry: path.join(__dirname, "../src/handlers/importProductsFile.ts"),
+        entry: path.join(__dirname, "../handlers/importProductsFile.ts"),
       }
     );
 
@@ -50,7 +50,7 @@ export class ImportServiceStack extends cdk.Stack {
       "ImportFileParserLambda",
       {
         ...commonLabmdaSettings,
-        entry: path.join(__dirname, "../src/handlers/importFileParser.ts"),
+        entry: path.join(__dirname, "../handlers/importFileParser.ts"),
       }
     );
 
