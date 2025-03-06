@@ -5,10 +5,11 @@ import {
 } from "aws-lambda";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { config } from "../config";
 import { handleError } from "../utils/responseError";
 import { response } from "../utils/responseSuccessful";
 
-const client = new S3Client({ region: "eu-west-1" });
+const client = new S3Client({ region: config.region });
 const BUCKET_NAME = process.env.BUCKET_NAME;
 
 export const handler: Handler = async (
@@ -30,7 +31,7 @@ export const handler: Handler = async (
     const command = new PutObjectCommand({
       Bucket: BUCKET_NAME,
       ContentType: "text/csv",
-      Key: `uploaded/${fileName}`,
+      Key: `${config.uploadFolder}/${fileName}`,
     });
     const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
 

@@ -7,13 +7,14 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
 import path = require("path");
+import { config } from "../src/config";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const importBucket = new s3.Bucket(this, "ImportBucket", {
-      bucketName: "my-import-aws-service-bucket",
+      bucketName: config.bucketName,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [
@@ -31,7 +32,7 @@ export class ImportServiceStack extends cdk.Stack {
       handler: "handler",
       environment: {
         BUCKET_NAME: importBucket.bucketName,
-        REGION: "eu-west-1",
+        REGION: config.region,
       },
     };
 
@@ -57,8 +58,8 @@ export class ImportServiceStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: ["s3:DeleteObject", "s3:PutObject"],
         resources: [
-          `${importBucket.bucketArn}/uploaded/*`,
-          `${importBucket.bucketArn}/parsed/*`,
+          `${importBucket.bucketArn}/${config.uploadFolder}/*`,
+          `${importBucket.bucketArn}/${config.parsedFolder}/*`,
         ],
       })
     );
@@ -66,7 +67,7 @@ export class ImportServiceStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, "ImportServiceAPI", {
       restApiName: "Import Service",
       deployOptions: {
-        stageName: "dev",
+        stageName: config.stage,
       },
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
@@ -84,7 +85,7 @@ export class ImportServiceStack extends cdk.Stack {
     importBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new s3Notifications.LambdaDestination(importFileParserLambda),
-      { prefix: "uploaded/" }
+      { prefix: `${config.uploadFolder}/` }
     );
 
     importBucket.grantReadWrite(importProductsFileLambda);

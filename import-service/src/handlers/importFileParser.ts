@@ -7,9 +7,10 @@ import {
 import { S3Event } from "aws-lambda";
 import csv from "csv-parser";
 import { Readable } from "stream";
+import { config } from "../config";
 import { handleError } from "../utils/responseError";
 
-const client = new S3Client({ region: "eu-west-1" });
+const client = new S3Client({ region: config.region });
 
 export const handler = async (event: S3Event): Promise<any> => {
   try {
@@ -21,10 +22,9 @@ export const handler = async (event: S3Event): Promise<any> => {
     for (const record of event.Records) {
       const bucket = record.s3.bucket.name;
       const key = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
-
       console.log("importFileParser: ", { bucket, key });
 
-      if (!key.startsWith("uploaded")) {
+      if (!key.startsWith(config.uploadFolder)) {
         console.log(
           `Skipping file ${key} because it's not in the upload folder`
         );
@@ -48,7 +48,7 @@ export const handler = async (event: S3Event): Promise<any> => {
       await parseCSV(stream as Readable);
       console.log(`CSV parsing complete for ${key}`);
 
-      const targetKey = key.replace("uploaded", "parsed");
+      const targetKey = key.replace(config.uploadFolder, config.parsedFolder);
       await moveFile(bucket, key, targetKey);
     }
   } catch (error) {
