@@ -1,6 +1,6 @@
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { Context } from "aws-lambda";
-import { createProduct } from "../index";
+import { handler } from "../createProduct";
 
 jest.mock("@aws-sdk/client-dynamodb");
 jest.mock("@aws-sdk/lib-dynamodb", () => {
@@ -39,7 +39,7 @@ describe("createProduct Lambda Function", () => {
     const event = {
       body: JSON.stringify(product),
     };
-    const response = await createProduct(event, context, cb);
+    const response = await handler(event, context, cb);
 
     expect(response.statusCode).toBe(201);
     expect(JSON.parse(response.body)).toEqual({
@@ -54,7 +54,7 @@ describe("createProduct Lambda Function", () => {
     const event = {
       body: JSON.stringify({ title: "Test Product" }),
     };
-    const response = await createProduct(event, context, cb);
+    const response = await handler(event, context, cb);
 
     expect(response.statusCode).toBe(400);
     expect(mockSend).not.toHaveBeenCalled();

@@ -5,18 +5,18 @@ import {
 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
-import { Product, Stock } from "../../src/types/products";
-import { handleError } from "../../src/utils/responseError";
-import { response } from "../../src/utils/responseSuccessful";
+import { Product, Stock } from "../types/products";
+import { handleError } from "../utils/responseError";
+import { response } from "../utils/responseSuccessful";
 
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
 
-export const getProductsById: Handler = async (
+export const handler: Handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    console.log("getProductsById invoked", {
+    console.log("getProductById invoked", {
       pathParameters: event.pathParameters,
     });
     const { productId } = event.pathParameters || {};

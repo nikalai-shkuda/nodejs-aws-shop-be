@@ -1,6 +1,6 @@
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Context } from "aws-lambda";
-import { getProducts } from "../index";
+import { handler } from "../getProducts";
 
 jest.mock("@aws-sdk/client-dynamodb");
 jest.mock("@aws-sdk/lib-dynamodb");
@@ -36,7 +36,7 @@ describe("getProducts handler", () => {
       send: mockSend,
     });
 
-    const result = await getProducts(event, context, cb);
+    const result = await handler(event, context, cb);
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toEqual(expectedResponse);
@@ -53,7 +53,7 @@ describe("getProducts handler", () => {
       send: mockSend,
     });
 
-    const result = await getProducts(event, context, cb);
+    const result = await handler(event, context, cb);
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toEqual([]);
@@ -67,7 +67,7 @@ describe("getProducts handler", () => {
       send: mockSend,
     });
 
-    const result = await getProducts(event, context, cb);
+    const result = await handler(event, context, cb);
 
     expect(result.statusCode).toBe(500);
   });

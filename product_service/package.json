@@ -9,8 +9,8 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "npm run build && cdk deploy",
-    "seed-db": "node db/seedDB.js"
+    "deploy": "cdk deploy",
+    "seed-db": "npm run build && node dist/src/db/seedDB"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.147",

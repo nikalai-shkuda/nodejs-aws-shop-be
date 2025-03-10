@@ -1,10 +1,11 @@
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
-import { Code, LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import path = require("path");
+import { config } from "../config";
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -13,41 +14,39 @@ export class ProductServiceStack extends cdk.Stack {
     const productsTable = new Table(this, "ProductsTable", {
       partitionKey: { name: "id", type: AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Change to RETAIN in production
-      tableName: "products",
+      tableName: config.productsTableName,
     });
 
     const stocksTable = new Table(this, "StocksTable", {
       partitionKey: { name: "product_id", type: AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Change to RETAIN in production
-      tableName: "stocks",
+      tableName: config.stocksTableName,
     });
 
     const commonLabmdaSettings = {
       runtime: Runtime.NODEJS_22_X,
+      handler: "handler",
       environment: {
         PRODUCTS_TABLE: productsTable.tableName,
         STOCKS_TABLE: stocksTable.tableName,
-        REGION: "eu-west-1",
+        REGION: config.region,
       },
       bundling: {
         sourceMap: true,
-        externalModules: ["headers", "mock", "types"],
       },
     };
 
     const getProductsLambda = new NodejsFunction(this, "GetProductsLambda", {
-      entry: path.join(__dirname, "../lambda/getProducts/index.ts"),
-      handler: "getProducts",
       ...commonLabmdaSettings,
+      entry: path.join(__dirname, "../handlers/getProducts.ts"),
     });
 
     const getProductsByIdLambda = new NodejsFunction(
       this,
       "GetProductsByIdLambda",
       {
-        entry: path.join(__dirname, "../lambda/getProductsById/index.ts"),
-        handler: "getProductsById",
         ...commonLabmdaSettings,
+        entry: path.join(__dirname, "../handlers/getProductById.ts"),
       }
     );
 
@@ -55,9 +54,8 @@ export class ProductServiceStack extends cdk.Stack {
       this,
       "CreateProductLambda",
       {
-        entry: path.join(__dirname, "../lambda/createProduct/index.ts"),
-        handler: "createProduct",
         ...commonLabmdaSettings,
+        entry: path.join(__dirname, "../handlers/createProduct.ts"),
       }
     );
 
@@ -71,7 +69,7 @@ export class ProductServiceStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, "ProductServiceAPI", {
       restApiName: "Product Service",
       deployOptions: {
-        stageName: "dev",
+        stageName: config.stage,
       },
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,

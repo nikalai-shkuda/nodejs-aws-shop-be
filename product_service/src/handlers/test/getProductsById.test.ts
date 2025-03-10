@@ -1,11 +1,11 @@
 import { Context } from "aws-lambda";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { getProductsById } from "../index";
+import { handler } from "../getProductById";
 
 jest.mock("@aws-sdk/client-dynamodb");
 jest.mock("@aws-sdk/lib-dynamodb");
 
-describe("getProductsById", () => {
+describe("getProductById", () => {
   const context = {} as Context;
   const cb = () => {};
 
@@ -26,7 +26,7 @@ describe("getProductsById", () => {
     });
 
     const event = { pathParameters: { productId: "1" } };
-    const response = await getProductsById(event, context, cb);
+    const response = await handler(event, context, cb);
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({
@@ -48,14 +48,14 @@ describe("getProductsById", () => {
     });
 
     const event = { pathParameters: { productId: "1" } };
-    const response = await getProductsById(event, context, cb);
+    const response = await handler(event, context, cb);
 
     expect(response.statusCode).toBe(404);
   });
 
   it("should return 400 if productId is missing", async () => {
     const event = { pathParameters: {} };
-    const response = await getProductsById(event, context, cb);
+    const response = await handler(event, context, cb);
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toContain("Product ID is required");
@@ -66,7 +66,7 @@ describe("getProductsById", () => {
     mockSend.mockRejectedValue(new Error("DynamoDB error"));
 
     const event = { pathParameters: { productId: "1" } };
-    const response = await getProductsById(event, context, cb);
+    const response = await handler(event, context, cb);
 
     expect(response.statusCode).toBe(500);
   });
