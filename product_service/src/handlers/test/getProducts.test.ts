@@ -1,9 +1,12 @@
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Context } from "aws-lambda";
 import { handler } from "../getProducts";
+import { dynamodbClient } from "../../utils/dbClient";
 
-jest.mock("@aws-sdk/client-dynamodb");
-jest.mock("@aws-sdk/lib-dynamodb");
+jest.mock("../../utils/dbClient", () => ({
+  dynamodbClient: {
+    send: jest.fn(),
+  },
+}));
 
 describe("getProducts handler", () => {
   const mockProducts = [
@@ -26,15 +29,10 @@ describe("getProducts handler", () => {
     jest.clearAllMocks();
   });
 
-  it("should successfully fetch and combine products with stocks", async () => {
-    const mockSend = jest.fn();
-    mockSend
+  it("should return products with stocks", async () => {
+    (dynamodbClient.send as jest.Mock)
       .mockImplementationOnce(() => Promise.resolve({ Items: mockProducts }))
       .mockImplementationOnce(() => Promise.resolve({ Items: mockStocks }));
-
-    (DynamoDBDocumentClient.from as jest.Mock).mockReturnValue({
-      send: mockSend,
-    });
 
     const result = await handler(event, context, cb);
 
@@ -44,14 +42,9 @@ describe("getProducts handler", () => {
   });
 
   it("should handle empty products and stocks", async () => {
-    const mockSend = jest.fn();
-    mockSend
+    (dynamodbClient.send as jest.Mock)
       .mockImplementationOnce(() => Promise.resolve({ Items: [] }))
       .mockImplementationOnce(() => Promise.resolve({ Items: [] }));
-
-    (DynamoDBDocumentClient.from as jest.Mock).mockReturnValue({
-      send: mockSend,
-    });
 
     const result = await handler(event, context, cb);
 
@@ -60,12 +53,9 @@ describe("getProducts handler", () => {
   });
 
   it("should handle DynamoDB errors", async () => {
-    const mockError = new Error("DynamoDB error");
-    const mockSend = jest.fn().mockRejectedValue(mockError);
-
-    (DynamoDBDocumentClient.from as jest.Mock).mockReturnValue({
-      send: mockSend,
-    });
+    (dynamodbClient.send as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error("DB Error"))
+    );
 
     const result = await handler(event, context, cb);
 

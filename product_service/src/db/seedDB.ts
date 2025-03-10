@@ -1,8 +1,7 @@
-const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { config } from "../config";
 import { Product, Stock } from "../types/products";
-
-const client = new DynamoDBClient({ region: config.region });
+import { dynamodbClient } from "../utils/dbClient";
 
 const products: Product[] = [
   {
@@ -26,26 +25,24 @@ const stocks: Stock[] = products.map((product) => ({
 
 async function populateDB(): Promise<void> {
   for (const product of products) {
-    await client.send(
-      new PutItemCommand({
+    await dynamodbClient.send(
+      new PutCommand({
         TableName: config.productsTableName,
         Item: {
-          id: { S: product.id },
-          title: { S: product.title },
-          description: { S: product.description },
-          price: { N: product.price.toString() },
+          ...product,
+          price: product.price.toString(),
         },
       })
     );
   }
 
   for (const stock of stocks) {
-    await client.send(
-      new PutItemCommand({
+    await dynamodbClient.send(
+      new PutCommand({
         TableName: config.stocksTableName,
         Item: {
-          product_id: { S: stock.product_id },
-          count: { N: stock.count.toString() },
+          ...stock,
+          count: stock.count.toString(),
         },
       })
     );

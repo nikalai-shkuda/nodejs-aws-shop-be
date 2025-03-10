@@ -1,7 +1,7 @@
+import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyResult, Handler } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { Product, Stock } from "../types/products";
+import { dynamodbClient } from "../utils/dbClient";
 import { handleError } from "../utils/responseError";
 import { response } from "../utils/responseSuccessful";
 
@@ -11,11 +11,9 @@ const stocksTable = process.env.STOCKS_TABLE;
 export const handler: Handler = async (): Promise<APIGatewayProxyResult> => {
   try {
     console.log("getProducts invoked");
-    const client = new DynamoDBClient();
-    const dynamodb = DynamoDBDocumentClient.from(client);
     const [productsResponse, stocksResponse] = await Promise.all([
-      dynamodb.send(new ScanCommand({ TableName: productsTable })),
-      dynamodb.send(new ScanCommand({ TableName: stocksTable })),
+      dynamodbClient.send(new ScanCommand({ TableName: productsTable })),
+      dynamodbClient.send(new ScanCommand({ TableName: stocksTable })),
     ]);
 
     const products: Product[] = (productsResponse.Items as Product[]) || [];

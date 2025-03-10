@@ -1,11 +1,11 @@
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
   Handler,
 } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { Product, Stock } from "../types/products";
+import { dynamodbClient } from "../utils/dbClient";
 import { handleError } from "../utils/responseError";
 import { response } from "../utils/responseSuccessful";
 
@@ -27,17 +27,14 @@ export const handler: Handler = async (
       });
     }
 
-    const client = new DynamoDBClient();
-    const dynamodb = DynamoDBDocumentClient.from(client);
-
     const [productResponse, stockResponse] = await Promise.all([
-      dynamodb.send(
+      dynamodbClient.send(
         new GetCommand({
           TableName: productsTable,
           Key: { id: productId },
         })
       ),
-      dynamodb.send(
+      dynamodbClient.send(
         new GetCommand({
           TableName: stocksTable,
           Key: { product_id: productId },

@@ -1,9 +1,12 @@
 import { Context } from "aws-lambda";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { handler } from "../getProductById";
+import { dynamodbClient } from "../../utils/dbClient";
 
-jest.mock("@aws-sdk/client-dynamodb");
-jest.mock("@aws-sdk/lib-dynamodb");
+jest.mock("../../utils/dbClient", () => ({
+  dynamodbClient: {
+    send: jest.fn(),
+  },
+}));
 
 describe("getProductById", () => {
   const context = {} as Context;
@@ -14,16 +17,11 @@ describe("getProductById", () => {
   });
 
   it("should return a product with stock count", async () => {
-    const mockSend = jest.fn();
-    mockSend
+    (dynamodbClient.send as jest.Mock)
       .mockResolvedValueOnce({
         Item: { id: "1", title: "Product A", price: 50 },
       })
       .mockResolvedValueOnce({ Item: { product_id: "1", count: 10 } });
-
-    (DynamoDBDocumentClient.from as jest.Mock).mockReturnValue({
-      send: mockSend,
-    });
 
     const event = { pathParameters: { productId: "1" } };
     const response = await handler(event, context, cb);
@@ -38,14 +36,9 @@ describe("getProductById", () => {
   });
 
   it("should return 404 if product not found", async () => {
-    const mockSend = jest.fn();
-    mockSend
+    (dynamodbClient.send as jest.Mock)
       .mockResolvedValueOnce({ Item: null })
       .mockResolvedValueOnce({ Item: null });
-
-    (DynamoDBDocumentClient.from as jest.Mock).mockReturnValue({
-      send: mockSend,
-    });
 
     const event = { pathParameters: { productId: "1" } };
     const response = await handler(event, context, cb);
@@ -62,8 +55,9 @@ describe("getProductById", () => {
   });
 
   it("should handle DynamoDB errors", async () => {
-    const mockSend = jest.fn();
-    mockSend.mockRejectedValue(new Error("DynamoDB error"));
+    (dynamodbClient.send as jest.Mock).mockRejectedValue(
+      new Error("DynamoDB error")
+    );
 
     const event = { pathParameters: { productId: "1" } };
     const response = await handler(event, context, cb);
