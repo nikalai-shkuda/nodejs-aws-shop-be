@@ -1,6 +1,4 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
   TransactWriteCommand,
   TransactWriteCommandInput,
 } from "@aws-sdk/lib-dynamodb";
@@ -10,16 +8,15 @@ import {
   Handler,
 } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
-import { Product, ProductRequest, Stock } from "../../src/types/products";
-import { handleError } from "../../src/utils/responseError";
-import { response } from "../../src/utils/responseSuccessful";
+import { Product, ProductRequest, Stock } from "../types/products";
+import { dynamodbClient } from "../utils/dbClient";
+import { handleError } from "../utils/responseError";
+import { response } from "../utils/responseSuccessful";
 
-const client = new DynamoDBClient();
-const dynamodb = DynamoDBDocumentClient.from(client);
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
 
-export const createProduct: Handler = async (
+export const handler: Handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
@@ -72,7 +69,7 @@ export const createProduct: Handler = async (
       ],
     };
 
-    await dynamodb.send(new TransactWriteCommand(transaction));
+    await dynamodbClient.send(new TransactWriteCommand(transaction));
 
     console.log("Product created successfully", createdProduct);
     return response(201, createdProduct);

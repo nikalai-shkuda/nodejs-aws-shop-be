@@ -1,22 +1,22 @@
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
   Handler,
 } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
-import { Product, Stock } from "../../src/types/products";
-import { handleError } from "../../src/utils/responseError";
-import { response } from "../../src/utils/responseSuccessful";
+import { Product, Stock } from "../types/products";
+import { dynamodbClient } from "../utils/dbClient";
+import { handleError } from "../utils/responseError";
+import { response } from "../utils/responseSuccessful";
 
 const productsTable = process.env.PRODUCTS_TABLE;
 const stocksTable = process.env.STOCKS_TABLE;
 
-export const getProductsById: Handler = async (
+export const handler: Handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    console.log("getProductsById invoked", {
+    console.log("getProductById invoked", {
       pathParameters: event.pathParameters,
     });
     const { productId } = event.pathParameters || {};
@@ -27,17 +27,14 @@ export const getProductsById: Handler = async (
       });
     }
 
-    const client = new DynamoDBClient();
-    const dynamodb = DynamoDBDocumentClient.from(client);
-
     const [productResponse, stockResponse] = await Promise.all([
-      dynamodb.send(
+      dynamodbClient.send(
         new GetCommand({
           TableName: productsTable,
           Key: { id: productId },
         })
       ),
-      dynamodb.send(
+      dynamodbClient.send(
         new GetCommand({
           TableName: stocksTable,
           Key: { product_id: productId },
