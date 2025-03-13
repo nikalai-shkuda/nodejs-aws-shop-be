@@ -45,15 +45,27 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
+    // Import the queue URL from Product Service stack
+    const batchProductsQueueUrl = cdk.Fn.importValue("CatalogItemsQueueUrl");
+    const batchProductsQueueArn = cdk.Fn.importValue("CatalogItemsQueueArn");
+
     const importFileParserLambda = new NodejsFunction(
       this,
       "ImportFileParserLambda",
       {
         ...commonLabmdaSettings,
         entry: path.join(__dirname, "../handlers/importFileParser.ts"),
+        environment: {
+          SQS_URL: batchProductsQueueUrl,
+        },
       }
     );
-
+    importFileParserLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:SendMessage"],
+        resources: [batchProductsQueueArn],
+      })
+    );
     importFileParserLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["s3:DeleteObject", "s3:PutObject"],
@@ -94,6 +106,10 @@ export class ImportServiceStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ApiUrl", {
       value: api.url,
       description: "API Gateway endpoint URL for Import Service",
+    });
+    new cdk.CfnOutput(this, "SQSQueueUrl", {
+      value: batchProductsQueueUrl,
+      description: "SQS Queue URL for Product Catalog",
     });
   }
 }
