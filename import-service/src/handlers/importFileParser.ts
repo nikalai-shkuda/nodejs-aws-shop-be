@@ -4,13 +4,16 @@ import {
   GetObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { S3Event } from "aws-lambda";
 import csv from "csv-parser";
 import { Readable } from "stream";
 import { config } from "../config";
 import { handleError } from "../utils/responseError";
 
-const client = new S3Client({ region: config.region });
+const s3Client = new S3Client({ region: config.region });
+const sqsClient = new SQSClient({ region: config.region });
+const SQS_URL = process.env.SQS_URL || "";
 
 export const handler = async (event: S3Event): Promise<any> => {
   try {
@@ -36,16 +39,15 @@ export const handler = async (event: S3Event): Promise<any> => {
         Key: key,
       });
 
-      const { Body: stream } = await client.send(command);
-      console.log("importFileParser stream: ", stream);
+      const { Body } = await s3Client.send(command);
 
-      if (!stream) {
+      if (!Body) {
         return handleError({
           message: `Failed to get stream for ${key}`,
           statusCode: 400,
         });
       }
-      await parseCSV(stream as Readable);
+      await parseCSV(Body as Readable);
       console.log(`CSV parsing complete for ${key}`);
 
       const targetKey = key.replace(config.uploadFolder, config.parsedFolder);
@@ -65,22 +67,21 @@ const moveFile = async (
     console.log(
       `Moving file from ${sourceKey} to ${targetKey} in bucket ${bucket}`
     );
-    await client.send(
+    await s3Client.send(
       new CopyObjectCommand({
         Bucket: bucket,
         CopySource: encodeURIComponent(`${bucket}/${sourceKey}`),
         Key: targetKey,
       })
     );
-    console.log(`File moved to: ${targetKey}`);
 
-    await client.send(
+    await s3Client.send(
       new DeleteObjectCommand({
         Bucket: bucket,
         Key: sourceKey,
       })
     );
-    console.log(`File deleted from: ${sourceKey}`);
+    console.log(`File moved to: ${targetKey} and deleted from: ${sourceKey}`);
   } catch (error) {
     console.error("Error moving file, error:", error);
   }
@@ -90,7 +91,19 @@ const parseCSV = (stream: Readable) => {
   return new Promise((resolve, reject) => {
     stream
       .pipe(csv())
-      .on("data", (data) => console.log("Parsed CSV Record:", data))
+      .on("data", async (data) => {
+        try {
+          console.log("Sending to SQS:", data);
+          await sqsClient.send(
+            new SendMessageCommand({
+              QueueUrl: SQS_URL,
+              MessageBody: JSON.stringify(data),
+            })
+          );
+        } catch (error) {
+          console.error("Error sending message to SQS:", error);
+        }
+      })
       .on("end", () => resolve(true))
       .on("error", (error) => reject(error));
   });

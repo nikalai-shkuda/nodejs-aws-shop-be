@@ -1,7 +1,7 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { commonHeaders } from "./headers";
 
-type serverErrorType = {
+export type serverErrorType = {
   error?: unknown;
   message?: string;
   statusCode?: number;
