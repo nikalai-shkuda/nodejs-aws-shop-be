@@ -138,6 +138,18 @@ export class ProductServiceStack extends cdk.Stack {
     productEmailTopic.addSubscription(
       new snsSubscriptions.EmailSubscription(config.subscriptionEmailPrimary)
     );
+    productEmailTopic.addSubscription(
+      new snsSubscriptions.EmailSubscription(
+        config.subscriptionEmailSecondary,
+        {
+          filterPolicy: {
+            price: sns.SubscriptionFilter.numericFilter({
+              greaterThanOrEqualTo: 100,
+            }),
+          },
+        }
+      )
+    );
     productEmailTopic.grantPublish(catalogBatchProcessLambda);
 
     new cdk.CfnOutput(this, "CatalogItemsQueueUrl", {

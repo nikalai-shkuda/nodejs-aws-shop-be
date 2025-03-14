@@ -54,6 +54,12 @@ export const handler: SQSHandler = async (event) => {
       const command = new PublishCommand({
         TopicArn: SNS_TOPIC_ARN,
         Message: `New product created: ${product.title} (ID: ${product.id})`,
+        MessageAttributes: {
+          price: {
+            DataType: "Number",
+            StringValue: product.price.toString(),
+          },
+        },
         Subject: "Added new product to DB",
       });
       await snsClient.send(command);

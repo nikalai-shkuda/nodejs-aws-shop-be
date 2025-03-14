@@ -8,4 +8,5 @@ export const config = {
   region: "eu-west-1",
   stage: "dev",
   subscriptionEmailPrimary: process.env.SUBSCRIPTION_EMAIL_PRIMARY || "",
+  subscriptionEmailSecondary: process.env.SUBSCRIPTION_EMAIL_SECONDARY || "",
 };
