@@ -1,4 +1,4 @@
-import { SQSHandler } from "aws-lambda";
+import { SQSEvent } from "aws-lambda";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import {
   TransactWriteCommand,
@@ -12,7 +12,7 @@ import { dynamodbClient } from "../utils/dbClient";
 const snsClient = new SNSClient({ region: config.region });
 const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN || "";
 
-export const handler: SQSHandler = async (event) => {
+export const handler = async (event: SQSEvent): Promise<void> => {
   try {
     for (const record of event.Records) {
       const parsedProduct = JSON.parse(record.body);
