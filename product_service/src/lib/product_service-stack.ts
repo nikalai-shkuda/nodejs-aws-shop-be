@@ -1,11 +1,16 @@
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
+import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as snsSubscriptions from "aws-cdk-lib/aws-sns-subscriptions";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import path = require("path");
 import { config } from "../config";
+import path = require("path");
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -93,5 +98,72 @@ export class ProductServiceStack extends cdk.Stack {
       "GET",
       new apigateway.LambdaIntegration(getProductsByIdLambda)
     );
+
+    // SQS Queue
+    const catalogItemsQueue = new sqs.Queue(this, "BatchProductsQueue", {
+      queueName: "catalogItemsQueue",
+      visibilityTimeout: cdk.Duration.seconds(60),
+      receiveMessageWaitTime: cdk.Duration.seconds(20),
+    });
+
+    // SNS Topic
+    const productEmailTopic = new sns.Topic(this, "ProductEmailTopic", {
+      topicName: "ProductTopicNotifications",
+    });
+
+    const snsPublishPolicy = new iam.PolicyStatement({
+      actions: ["sns:Publish"],
+      resources: [productEmailTopic.topicArn],
+    });
+
+    const catalogBatchProcessLambda = new NodejsFunction(
+      this,
+      "CatalogBatchProcessLambda",
+      {
+        ...commonLabmdaSettings,
+        entry: path.join(__dirname, "../handlers/catalogBatchProcess.ts"),
+      }
+    );
+    catalogBatchProcessLambda.addEnvironment(
+      "SNS_TOPIC_ARN",
+      productEmailTopic.topicArn
+    );
+    catalogBatchProcessLambda.addEventSource(
+      new lambdaEventSources.SqsEventSource(catalogItemsQueue, {
+        batchSize: 5,
+      })
+    );
+    catalogBatchProcessLambda.addToRolePolicy(snsPublishPolicy);
+
+    productEmailTopic.addSubscription(
+      new snsSubscriptions.EmailSubscription(config.subscriptionEmailPrimary)
+    );
+    productEmailTopic.addSubscription(
+      new snsSubscriptions.EmailSubscription(
+        config.subscriptionEmailSecondary,
+        {
+          filterPolicy: {
+            price: sns.SubscriptionFilter.numericFilter({
+              greaterThanOrEqualTo: 100,
+            }),
+          },
+        }
+      )
+    );
+    productEmailTopic.grantPublish(catalogBatchProcessLambda);
+
+    new cdk.CfnOutput(this, "CatalogItemsQueueUrl", {
+      value: catalogItemsQueue.queueUrl,
+      exportName: "CatalogItemsQueueUrl",
+    });
+    new cdk.CfnOutput(this, "CatalogItemsQueueArn", {
+      value: catalogItemsQueue.queueArn,
+      exportName: "CatalogItemsQueueArn",
+    });
+
+    // Grant permissions
+    catalogItemsQueue.grantConsumeMessages(catalogBatchProcessLambda);
+    productsTable.grantWriteData(catalogBatchProcessLambda);
+    stocksTable.grantReadWriteData(catalogBatchProcessLambda);
   }
 }
