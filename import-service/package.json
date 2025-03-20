@@ -29,6 +29,7 @@
     "@aws-sdk/util-stream-node": "^3.370.0",
     "aws-cdk-lib": "2.178.1",
     "constructs": "^10.0.0",
-    "csv-parser": "^3.2.0"
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.4.7"
   }
 }
