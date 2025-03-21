@@ -9,6 +9,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
 import { config } from "../config";
+import { apigatewayHeaders } from "../utils/headers";
 
 import path = require("path");
 
@@ -116,6 +117,25 @@ export class ImportServiceStack extends cdk.Stack {
         resultsCacheTtl: cdk.Duration.seconds(0),
       }
     );
+
+    // Add gateway responses for unauthorized and forbidden
+    api.addGatewayResponse("Unauthorized", {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: "401",
+      responseHeaders: { ...apigatewayHeaders },
+      templates: {
+        "application/json": '{"message": "Unauthorized", "statusCode": 401}',
+      },
+    });
+
+    api.addGatewayResponse("Forbidden", {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: "403",
+      responseHeaders: { ...apigatewayHeaders },
+      templates: {
+        "application/json": '{"message": "Forbidden", "statusCode": 403}',
+      },
+    });
 
     const importResource = api.root.addResource("import");
     importResource.addMethod(

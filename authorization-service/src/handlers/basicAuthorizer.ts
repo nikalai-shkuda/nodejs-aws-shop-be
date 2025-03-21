@@ -22,7 +22,6 @@ export const handler = async (
     const [username, password] = decoded.split(":");
     const storedPassword = config.userPassword;
     const storedUsername = config.userName;
-
     console.log(`username: ${username}, password: ${password}`);
 
     if (username === storedUsername && password === storedPassword) {
@@ -51,6 +50,9 @@ const generatePolicy = (
           Resource: resource,
         },
       ],
+    },
+    context: {
+      message: effect === "Allow" ? "Authorized" : "Unauthorized",
     },
   };
 };
