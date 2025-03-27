@@ -94,12 +94,13 @@ const parseCSV = (stream: Readable) => {
       .on("data", async (data) => {
         try {
           console.log("Sending to SQS:", data);
-          await sqsClient.send(
-            new SendMessageCommand({
-              QueueUrl: SQS_URL,
-              MessageBody: JSON.stringify(data),
-            })
-          );
+          // TURN OFF FOR REDUCE COST!
+          // await sqsClient.send(
+          //   new SendMessageCommand({
+          //     QueueUrl: SQS_URL,
+          //     MessageBody: JSON.stringify(data),
+          //   })
+          // );
         } catch (error) {
           console.error("Error sending message to SQS:", error);
         }

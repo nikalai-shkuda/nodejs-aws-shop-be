@@ -1,13 +1,17 @@
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import { AuthorizationType } from "aws-cdk-lib/aws-apigateway";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
-import path = require("path");
 import { config } from "../config";
+import { apigatewayHeaders } from "../utils/headers";
+
+import path = require("path");
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -80,18 +84,67 @@ export class ImportServiceStack extends cdk.Stack {
       restApiName: "Import Service",
       deployOptions: {
         stageName: config.stage,
+        // loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        // dataTraceEnabled: true,
       },
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: ["OPTIONS", "GET", "PUT"],
+        allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: apigateway.Cors.DEFAULT_HEADERS,
+      },
+    });
+
+    // Reference Basic Authorizer Lambda ARN
+    const authorizerLambdaArn = cdk.Fn.importValue("BasicAuthorizerLambdaArn");
+    const authorizerLambda = lambda.Function.fromFunctionArn(
+      this,
+      "BasicAuthorizer",
+      authorizerLambdaArn
+    );
+    // Add permissions after authorizer is created. These will be associated with the authorizer through the sourceArn
+    new lambda.CfnPermission(this, "AuthorizerPermission", {
+      action: "lambda:InvokeFunction",
+      functionName: authorizerLambda.functionName,
+      principal: "apigateway.amazonaws.com",
+      sourceArn: `arn:aws:execute-api:${config.region}:${config.accountId}:${api.restApiId}/authorizers/*`,
+    });
+    const authorizer = new apigateway.TokenAuthorizer(
+      this,
+      "APIGatewayAuthorizer",
+      {
+        handler: authorizerLambda,
+        identitySource: apigateway.IdentitySource.header("Authorization"),
+        resultsCacheTtl: cdk.Duration.seconds(0),
+      }
+    );
+
+    // Add gateway responses for unauthorized and forbidden
+    api.addGatewayResponse("Unauthorized", {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: "401",
+      responseHeaders: { ...apigatewayHeaders },
+      templates: {
+        "application/json": '{"message": "Unauthorized", "statusCode": 401}',
+      },
+    });
+
+    api.addGatewayResponse("Forbidden", {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: "403",
+      responseHeaders: { ...apigatewayHeaders },
+      templates: {
+        "application/json": '{"message": "Forbidden", "statusCode": 403}',
       },
     });
 
     const importResource = api.root.addResource("import");
     importResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(importProductsFileLambda)
+      new apigateway.LambdaIntegration(importProductsFileLambda),
+      {
+        authorizer,
+        authorizationType: AuthorizationType.CUSTOM,
+      }
     );
 
     importBucket.addEventNotification(
