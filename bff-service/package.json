@@ -5,7 +5,10 @@
   "scripts": {
     "build": "rm -rf ./dist && tsc",
     "start": "tsx watch src",
-    "start:prod": "node dist/index.js"
+    "start:prod": "node dist/index.js",
+    "docker:build": "docker build -t bff-api .",
+    "docker:run": "docker run --rm --env-file .env -p 4000:4000 bff-api",
+    "ebs:deploy": "eb deploy develop"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
