@@ -1,0 +1,31 @@
+import { FastifyReply, FastifyRequest } from "fastify";
+
+export async function proxyRequest(
+  url: string,
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  try {
+    console.log("Proxy request: ", request);
+
+    const { body, headers, method } = request;
+    const cleanHeaders = { ...headers };
+    delete cleanHeaders.host;
+    delete cleanHeaders.connection;
+    delete cleanHeaders["content-length"];
+
+    const options = {
+      method,
+      headers: cleanHeaders as Record<string, string>,
+      body: body ? JSON.stringify(body) : null,
+    };
+
+    const response = await fetch(url, options);
+    const data = await response.json();
+
+    reply.code(response.status).send(data);
+  } catch (error) {
+    console.log(`Proxy error for ${url}`, { error, request });
+    reply.code(500).send({ error: "Failed to connect to service" });
+  }
+}
