@@ -1,10 +1,15 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 
+type ProxyResponse = {
+  statusCode: number;
+  body: any;
+};
+
 export async function proxyRequest(
   url: string,
   request: FastifyRequest,
   reply: FastifyReply
-): Promise<void> {
+): Promise<ProxyResponse> {
   try {
     console.log("Proxy request: ", request);
 
@@ -24,8 +29,17 @@ export async function proxyRequest(
     const data = await response.json();
 
     reply.code(response.status).send(data);
+
+    return {
+      statusCode: response.status,
+      body: data,
+    };
   } catch (error) {
     console.log(`Proxy error for ${url}`, { error, request });
     reply.code(500).send({ error: "Failed to connect to service" });
+    return {
+      statusCode: 500,
+      body: null,
+    };
   }
 }
