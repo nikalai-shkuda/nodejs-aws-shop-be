@@ -22,7 +22,7 @@ export const handler: Handler = async (
   try {
     console.log("createProduct invoked", { eventBody: event.body });
     const body = event.body ? JSON.parse(event.body) : {};
-    const { description, count, price, title } = body;
+    const { description, count, imageUrl, price, title } = body;
 
     if (
       !description ||
@@ -32,7 +32,9 @@ export const handler: Handler = async (
       !price ||
       typeof price !== "number" ||
       !count ||
-      typeof count !== "number"
+      typeof count !== "number" ||
+      !imageUrl ||
+      typeof imageUrl !== "string"
     ) {
       return handleError({ message: "Invalid request body", statusCode: 400 });
     }
@@ -40,6 +42,7 @@ export const handler: Handler = async (
     const id = uuidv4();
     const product: Product = {
       id,
+      imageUrl,
       title,
       description,
       price,

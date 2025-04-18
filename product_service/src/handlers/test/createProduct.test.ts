@@ -31,6 +31,7 @@ describe("createProduct Lambda Function", () => {
 
     const product = {
       title: "Test Product",
+      imageUrl: "https://random-image-pepebigotes.vercel.app/api/random-image",
       description: "Test Description",
       price: 100,
       count: 5,

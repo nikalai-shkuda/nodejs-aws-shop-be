@@ -30,6 +30,7 @@ export const handler = async (
       const id = uuidv4();
       const product: Product = productSchema.parse({
         id,
+        imageUrl: validatedParsedProduct.imageUrl,
         description: validatedParsedProduct.description,
         price: Number(validatedParsedProduct.price),
         title: validatedParsedProduct.title,
