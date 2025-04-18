@@ -3,6 +3,7 @@ import { getCachedData, setCacheData } from "../utils/cache";
 import { proxyRequest } from "../utils/proxy";
 
 const productsKey = "products";
+const cacheTime = 120; // 2 minutes
 
 export async function productRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.all("/products", async (request, reply) => {
@@ -16,6 +17,7 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
 
     if (request.method === "GET" && cache.fromCache) {
       fastify.log.info("Returning products from cache");
+      reply.header("Cache-Control", `public, max-age=${cacheTime}`);
       return reply.code(200).send(cache.data);
     }
 
@@ -24,6 +26,10 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
 
     if (response.statusCode === 200) {
       setCacheData(productsKey, response.body);
+      fastify.log.info("Returning products from server");
+      request.method === "GET"
+        ? reply.header("Cache-Control", `public, max-age=${cacheTime}`)
+        : reply.header("Cache-Control", "no-store"); // Don't cache non-GET requests
     }
   });
 }
