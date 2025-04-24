@@ -13,11 +13,15 @@ export const createProductFromCsvSchema = z.object({
 
   count: z.string(),
 
+  imageUrl: z.string().url("Image URL must be a valid URL").optional(),
+
   price: z.string(),
 });
 
 export const productSchema = z.object({
   id: z.string().uuid("ID must be a valid UUID"),
+
+  imageUrl: z.string().url("Image URL must be a valid URL").optional(),
 
   title: z
     .string()
